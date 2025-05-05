@@ -58,17 +58,8 @@ UAnimSequence* UglTFRuntimeIKRetargeterLibrary::LoadAndIKRetargetSkeletalAnimati
 	TArray<FTransform> SourceComponentPose;
 	SourceComponentPose.SetNum(NumSourceBones);
 
-	// get names of the curves the retargeter is looking for
-	TArray<FName> SpeedCurveNames;
-	IKRetargeter->GetSpeedCurveNames(SpeedCurveNames);
-
 	// number of frames in this animation
 	//const int32 NumFrames = AnimSequence->GetNumberOfSampledKeys();
-
-	for (const FName& SpeedCurveName : SpeedCurveNames)
-	{
-		UE_LOG(LogTemp, Error, TEXT("SpeedCurveName %s"), *SpeedCurveName.ToString());
-	}
 
 #if 0
 	// BoneTracks arrays allocation
