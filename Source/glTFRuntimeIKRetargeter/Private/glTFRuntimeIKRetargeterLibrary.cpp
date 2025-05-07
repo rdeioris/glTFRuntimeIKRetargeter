@@ -46,10 +46,6 @@ UAnimSequence* UglTFRuntimeIKRetargeterLibrary::LoadAndIKRetargetSkeletalAnimati
 	const TArray<FName>& TargetBoneNames = TargetSkeleton.BoneNames;
 	const int32 NumTargetBones = TargetBoneNames.Num();
 
-	// allocate target keyframe data
-	TArray<FRawAnimSequenceTrack> BoneTracks;
-	BoneTracks.SetNumZeroed(NumTargetBones);
-
 	// source skeleton data
 	const FRetargetSkeleton& SourceSkeleton = Processor->GetSkeleton(ERetargetSourceOrTarget::Source);
 	const TArray<FName>& SourceBoneNames = SourceSkeleton.BoneNames;
@@ -57,19 +53,6 @@ UAnimSequence* UglTFRuntimeIKRetargeterLibrary::LoadAndIKRetargetSkeletalAnimati
 
 	TArray<FTransform> SourceComponentPose;
 	SourceComponentPose.SetNum(NumSourceBones);
-
-	// number of frames in this animation
-	//const int32 NumFrames = AnimSequence->GetNumberOfSampledKeys();
-
-#if 0
-	// BoneTracks arrays allocation
-	for (int32 TargetBoneIndex = 0; TargetBoneIndex < NumTargetBones; ++TargetBoneIndex)
-	{
-		BoneTracks[TargetBoneIndex].PosKeys.SetNum(NumFrames);
-		BoneTracks[TargetBoneIndex].RotKeys.SetNum(NumFrames);
-		BoneTracks[TargetBoneIndex].ScaleKeys.SetNum(NumFrames);
-	}
-#endif
 
 	// reset the planting state
 	Processor->ResetPlanting();
@@ -145,22 +128,25 @@ UAnimSequence* UglTFRuntimeIKRetargeterLibrary::LoadAndIKRetargetSkeletalAnimati
 		const TArray<FTransform>& DstPoses = DstSkeletalMesh->GetRefSkeleton().GetRefBonePose();
 
 		BoneIndex = 0;
-		for (const FName& BoneName : SourceBoneNames)
+		for (const FName& BoneName : TargetBoneNames)
 		{
 			if (Tracks.Contains(BoneName.ToString()))
 			{
 				FRawAnimSequenceTrack& SourceTrack = Tracks[BoneName.ToString()];
-				SourceTrack.PosKeys[FrameIndex] = FVector3f(TargetLocalPose[BoneIndex].GetLocation());
-				SourceTrack.RotKeys[FrameIndex] = FQuat4f(TargetLocalPose[BoneIndex].GetRotation().GetNormalized());
-
-				const int32 DstBoneIndex = DstSkeletalMesh->GetRefSkeleton().FindBoneIndex(BoneName);
-
-				if (DstBoneIndex == 0)
+				if (SourceTrack.PosKeys.Num() > FrameIndex)
 				{
-					SourceTrack.PosKeys[FrameIndex] = FVector3f(DstPoses[DstBoneIndex].GetLocation());
-				}
+					SourceTrack.PosKeys[FrameIndex] = FVector3f(TargetLocalPose[BoneIndex].GetLocation());
+					SourceTrack.RotKeys[FrameIndex] = FQuat4f(TargetLocalPose[BoneIndex].GetRotation().GetNormalized());
 
-				SourceTrack.ScaleKeys[FrameIndex] = FVector3f(DstPoses[DstBoneIndex].GetScale3D());
+					const int32 DstBoneIndex = DstSkeletalMesh->GetRefSkeleton().FindBoneIndex(BoneName);
+
+					if (BoneName == SourceBoneNames[0])
+					{
+						SourceTrack.PosKeys[FrameIndex] = FVector3f(0, 0, DstPoses[DstBoneIndex].GetLocation().Z);
+					}
+
+					SourceTrack.ScaleKeys[FrameIndex] = FVector3f(DstPoses[DstBoneIndex].GetScale3D());
+				}
 			}
 			BoneIndex++;
 		}
